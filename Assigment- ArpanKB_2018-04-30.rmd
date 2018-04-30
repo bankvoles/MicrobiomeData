@@ -1,0 +1,135 @@
+---
+title: "Gut_microbiome of Bank Voles"
+author: "Arpan Kumar Basak"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+bibliography: null
+---
+
+## Installing the dependencies
+```{r pkgs}
+pkgs <- c("RCurl", "bbmle","blme","brms","gamm4","glmmLasso","glmmML","lme4","glmmTMB","MCMCglmm","robustlmm", 
+          "spaMM","tidyverse","reshape2","plyr", "benchmark","emdbook","devtools", "AICcmodavg","cAIC4", "coda", 
+          "effects", "emmeans","multcomp","arm", "car","Hmisc","HLMdiag","stargazer","texreg","rockchalk","RLRsim",
+          "pbkrtest","lmerTest","broom","dotwhisker","ggplot2","ggstance","GGally","cowplot",
+          "gridExtra","plotrix","dotwhisker","plotMCMC","relations")
+
+install_pkg <- pkgs[!pkgs %in% installed.packages()]
+
+for(lib in install_pkg) install.packages(lib, dependencies = T, quiet = T)
+
+
+```
+
+## Data Import
+
+```{Load data}
+
+url <- getURL("https://raw.githubusercontent.com/bankvoles/MicrobiomeData/master/BVoles_data_ArpanKB_2018-04-29.txt")
+dat <- read.table(textConnection(url), header = T, row.names = 1)
+
+```
+
+
+## Methodology
+
+  1. Several individuals were chosen randomly from different families for a low quality diet treatment.
+  2. Treatment of the diet was administered over a period of 3 days.
+  3. Three days after treatment animals were sacrificed and there gut content were isolated.
+  4. These gut samples were analysed 16rRNA Next-Gen Sequencing through Illumina Miseq.
+  5. Relative abundance of bacterial OTU (Operational Taxonomical unit) count,a measure of bacterial abundance based on DNA sequence alignment.
+  6. Statistical analysis were conducted for searching clarity wether there is an effect of bacterial abundance at genus level on low-quality diet.
+
+## Question and objective
+  - Lactobacillus is a dominant genus in the gut, supporting a healthy gut environment. Any alteration in the diet may reshape there abundance.
+      - Will there will be decrease in the abundance of Lactobacillus in the gut?
+  - Ruminnococcus, on the contrary is another bacterial genus associated with complex fibre digestion. Growth of these bacterial genus is associated with the fibre fermentation.
+      - Due to the administration of the low-quality diet (rich in fibre), will there be an increase in abundance of this genus?
+
+## Data Visualisation
+```{Data Vis}
+
+head(dat)
+nrow(dat)
+str(dat)
+colnames(dat)
+rownames(dat)
+summary(dat)
+str(dat)
+
+```
+
+Exploring the data with ggplot.
+
+```{Data explr}
+
+p_lm_l <- ggplot(dat, aes(Sample_type, Lactobacillus, colour = Selection_line)) + geom_point() + geom_smooth(method = "lm", aes(group = Sex)) + theme_classic()
+
+p_lm_r <- ggplot(dat, aes(Sample_type, Ruminococcus, colour = Selection_line)) + geom_point() + geom_smooth(method = "lm", aes(group = Sex))
+
+p_lm_l
+p_lm_r
+
+```
+
+A box plot will summarise the entire story behind the plot.
+
+```{Data explr}
+
+p_bx_l <- ggplot(dat, aes(Sample_type, Lactobacillus, fill= Selection_line)) + geom_boxplot() + theme_classic()
+
+p_bx_r <- ggplot(dat, aes(Sample_type, Ruminococcus, fill = Selection_line)) + geom_boxplot() + theme_classic()
+
+p_bx_l
+p_bx_r
+
+```
+
+It seems Treatment group has less abundance of Lactobacillus than Crontrol group. Contastingly, relative abundance of Ruminococcus is more in Treatment group than control.
+
+
+## Statistical modelling
+
+A linear model is favourable to observe the declining trend. On the contrary, Kruskal-Wallis test will be favourable in order to obtain statistical clarity.
+
+- ### For Lactobacillus
+```{Lac Stat}
+mod_kt <- kruskal.test(g = dat$Sample_type, x = dat$Lactobacillus)
+mod_kt
+mod_lm <- lm(Lactobacillus ~ Sample_type, dat)
+summary(mod_lm)
+```
+
+The declining interaction of relative abundance of Lactobacillus and tretment group is clear as per the summary statistics.
+
+- ### For Ruminococcus
+```{Rum Stat}
+mod1_kt <- kruskal.test(g = dat$Sample_type, x = dat$Ruminococcus)
+mod1_lm <- lm(Ruminococcus ~ Sample_type, data = dat)
+
+summary(mod_lm)
+summary(mod1_lm)
+```
+
+The increasing interaction of relative abundance of Ruminococcus and tretment group is clear as per the summary statistics.
+
+- ## Model fit visualisation
+```{fit vis}
+
+par(mfrow = c(4,2))
+
+plot(mod_lm, main = "Lactobacillus")
+plot(mod1_lm, main = "Ruminococcus")
+
+par(mfrow = c(1,1))
+```
+
+
+## Conclusion
+  - After conducting the statistical analysis it is clear that the group with low-quality has lower lactobacillus content in their gut compared to control group.
+  - Similarly, relative abundance of Ruminococcus was significantly high in the treatment group. Thus, providing a clear picture that the fire content of low-quality diet supported the growth of this species in order to extract sufficient amount of micronutrients for the host.
+  
+
+######Note This is a toy dataset created from real observed values
